@@ -302,8 +302,7 @@ code: |
         success_exit
     else:
       # Should go to appeal once written
-      failure_reason = "Your hearing has already been held and you have been ordered to leave your property.  You need to file an appeal."
-      ineligible
+      command('leave', url="https://iolaw.net/start/LAWV%20Petition%20for%20Appeal/")
   else:
     failure_reason = "If you have not received a summons and complaint, there is no need to file an answer at this time."
     ineligible
