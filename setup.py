@@ -44,7 +44,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
     return out
 
 setup(name='docassemble.LAWVLegalHelpforRenters',
-      version='0.0.2',
+      version='0.0.3',
       description=('A docassemble extension.'),
       long_description='Source package for the LAWV Legal Help for Renters project that will allow users to create documents for: 1) Answer to Wrongful Occupation\r\n2) Breach of Warranty of Habitability Letter\r\n3) Petition for Appeal from Bench Trial\r\n4) Public Housing Authority Informal Hearing Request\r\n5) Return of Security Deposit Letter',
       long_description_content_type='text/markdown',
@@ -54,7 +54,7 @@ setup(name='docassemble.LAWVLegalHelpforRenters',
       url='https://docassemble.org',
       packages=find_packages(),
       namespace_packages=['docassemble'],
-      install_requires=['docassemble.LAWVCommon>=1.0.9'],
+      install_requires=['docassemble.LAWVCommon>=1.0.10'],
       zip_safe=False,
       package_data=find_package_data(where='docassemble/LAWVLegalHelpforRenters/', package='docassemble.LAWVLegalHelpforRenters'),
      )
