@@ -490,7 +490,7 @@ code: |
           # Tenant has not spent money to fix the issue
           detail += "Further, " + p.name.full() + " promised to " + promise + ", has not done so, and is in breach. "
       if warranty.any_true():
-        detail += "My duty to pay rent is suspended because of " + r.possessive('breach') + " of the Warranty of Habitability. "
+        detail += "My duty to pay rent is suspended because of " + p.possessive('breach') + " of the Warranty of Habitability. "
   
   if retaliation:
     detail += "I believe " + p.name.full() + " filed this action in retaliation to the complaint(s) I made about the conditions of the property. "
