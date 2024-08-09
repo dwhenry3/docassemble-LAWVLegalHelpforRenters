@@ -21,6 +21,7 @@ objects:
   - summons_img: DAStaticFile.using(filename='wrongful_occupation_summons.png', alt_text='Wrongful Occupation Summons')
   - complaint_img: DAStaticFile.using(filename='wrongful_occupation_petition.png', alt_text='Wrongful Occupation Complaint')
   - civil_judgment_order_rental_img: DAStaticFile.using(filename='civil_judgment_order_rental.png', alt_text='Civil Judgment Order - Rental')
+  - order_of_possession_img: DAStaticFile.using(filename='order_of_possession.png', alt_text='Order of Possession')
   - p: Person
   - r: Person
 ---
@@ -34,10 +35,10 @@ yesno: served
 ---
 ga id: woaHearing
 question: |
-  Have you already had a hearing or received a Civil Judgment Order?
+  Have you already had a **Final Hearing**, received a Civil Judgment Order, or an Order of Possession?
 subquestion: |
-  A Civil Judgment Order looks like this:  
-  [${ civil_judgment_order_rental_img.show(width='15em') }](${ civil_judgment_order_rental_img.url_for() })
+  A Civil Judgment Order looks like this:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The Order of Possession looks like this:
+  [${ civil_judgment_order_rental_img.show(width='15em') }](${ civil_judgment_order_rental_img.url_for() })[${ order_of_possession_img.show(width='15em') }](${ order_of_possession_img.url_for() })
 yesno: hearing_held
 ---
 ga id: woaCaseInformation
@@ -83,7 +84,7 @@ ga id: woaPropertyDetails
 question: |
   Is this a Factory-built Home Site?
 subquestion: |
-  A **Factory-built Home Site** is a lot or piece of land you are renting for a mobile home that you own.
+  A **Factory-built Home Site** is a lot or piece of land you are renting for a mobile home / trailer that you own.
 yesno: factory_built
 ---
 ga id: woaClaimDetails
@@ -104,7 +105,7 @@ ga id: woaFactoryClaimDetails
 question: |
   Claim Details
 subquestion: |
-  What has the landlord claimed?
+  Take a look at the **Petition for Summary Relief, Wrongful Occupation of Factory-Built Home Site**.  What has the landlord claimed?
 field: factory_allegations
 datatype: checkboxes
 choices:
@@ -115,6 +116,7 @@ choices:
   - Tenant has failed to improve or maintain the property: improvement
   - Tenant has failed to pay for services: services
   - Some other breach: other
+  - There is no written agreement and Tenant has breached a warranty: unwritten
   - Tenant has deliberately or negligently damaged property: damage
 ---
 ga id: woaRentOwed
@@ -221,6 +223,26 @@ fields:
     datatype: currency
     show if: unjust_enrichment
 ---
+ga id: woaCrossClaim
+question: |
+  Claim Against Someone Else
+subquestion: |
+  Your landlord alleged there was a breach of the lease or damages requiring eviction.  However, if someone else caused the issue, they might be responsible instead of you.
+fields:
+  - Was there someone else **on the lease**, other than you?: cotenant
+    datatype: yesnoradio
+  - Are they also named on the petition?: named_party
+    datatype: yesnoradio
+    show if: cotenant
+  - Were they, or their guest, responsible for the damage or breach?: cotenant_responsible
+    datatype: yesnoradio
+    show if: cotenant
+  - What is their name?: cotenant_name
+    show if: cotenant_responsible
+  - They are responsible because...: cotenant_breach
+    input type: area
+    show if: cotenant_responsible
+---
 ga id: woaRetaliation
 question: |
   Have you made a complaint to your landlord, housing authority, or public health official about the conditions of the property?
@@ -232,6 +254,35 @@ question: |
 subquestion: |
   So far you have said that the landlord is alleging: 
 
+  % if factory_built:
+  % if factory_allegations["holdover"]:
+  * Tenant is holding over
+  % endif
+  % if factory_allegations["arrears"]:
+  * Tenant is in arrears
+  % endif
+  % if factory_allegations["lease"]:
+  * Tenant has breached the terms of the lease
+  % endif
+  % if factory_allegations["rules"]:
+  * Tenant has breached the rules of factory-built rental community
+  % endif
+  % if factory_allegations["improvement"]:
+  * Tenant has failed to improve or maintain the property
+  % endif
+  % if factory_allegations["services"]:
+  * Tenant has failed to pay for services
+  % endif
+  % if factory_allegations["other"]:
+  * Some other breach
+  % endif
+  % if factory_allegations["unwritten"]:
+  * There is no written agreement and Tenant has breached a warranty
+  % endif
+  % if factory_allegations["damage"]:
+  * Tenant has deliberately or negligently damaged property
+  % endif
+  % else:
   % if rental_allegations["rent"]:
   * Unpaid rent  
   % endif
@@ -241,7 +292,9 @@ subquestion: |
   % if rental_allegations["damage"]:
   * Damage to the property  
   % endif
+  % endif
 
+  % if not factory_built:
   % if warranty.any_true():
   However, you also said that your rental has  
 
@@ -272,7 +325,14 @@ subquestion: |
   % endif
   % endif
 
-  % if rental_allegations["rent"]:
+  % if rental_allegations["breach"] or rental_allegations["damage"]:
+  % if cotenant_responsible:
+  You are alleging that ${ cotenant_name } is actually reponsible for the breach because ${ cotenant_breach } and you do not want to be responsible for their actions.
+  % endif
+  % endif
+  % endif
+
+  % if (defined("rental_allegations['rent']") and rental_allegations["rent"]) or (defined("factory_allegations['arrears']") and factory_allegations["arrears"]):
   % if promise_breach:
   You also stated that the landlord failed to fulfill the promise of: ${ promise }
   % if promise_remediation:
@@ -290,7 +350,7 @@ subquestion: |
   You also improved the property by: ${ improvements } at a cost of ${ currency(improvements_cost) }, and will be asking for damages in a counterclaim.
   % endif
 
-  Please write out specifics, such as the conditions of the property and notices you provided your landlord.
+  Please write out additional details, such as the conditions of the property and notices you provided your landlord.
 fields:
   - no label: rental_detail
     input type: area
@@ -323,7 +383,7 @@ attachment:
       - "duty_to_pay": ${ promise_breach }
       - "other": No
       - "counterclaim": ${ counter_claim }
-      - "cross_claim": No
+      - "cross_claim": ${ cross_claim }
       - "detail": ${ detail }      
       - "d1_phone": ${ r.phone_number }
       - "d1_address_one_line": ${ r.address.on_one_line() }
@@ -355,7 +415,7 @@ attachment:
       - "duty_to_pay": ${ promise_breach }
       - "other": No
       - "counterclaim": ${ counter_claim }
-      - "cross_claim": No
+      - "cross_claim": ${ cross_claim }
       - "detail": "See Attached Sheet"      
       - "d1_phone": ${ r.phone_number }
       - "d1_address_one_line": ${ r.address.on_one_line() }
@@ -369,6 +429,18 @@ subquestion: |
   Reason: ${ failure_reason }  
 buttons: 
   - Exit: exit
+  - Restart: restart
+---
+ga id: woaAppeal
+question: |
+  It appears you need to file an appeal
+subquestion: |  
+  Because you already had a final hearing, received a Civil Judgement Order, or an Order of Possession, you case at the magistrate level is complete.
+
+  Instead of filing an answer you will need to file an appeal if you want to stay in where you are.  You can click the button below to continue with filing an appeal, or if you made a mistake you can restart the tool.
+field: answer_appeal
+buttons:
+  - Continue to Appeal: appeal
   - Restart: restart
 ---
 ga id: woaSuccessExit
@@ -388,9 +460,14 @@ mandatory: True
 code: |
   if served:
     if not hearing_held:
-      hearing_date
+      hearing_date      
       if factory_built:
         factory_allegations
+        admitting_in
+        defenses = "No"
+        warranty_of_habitability = "No"
+        counter_claim = "No"
+        cross_claim = "No"
       else:
         rental_allegations
         if warranty.any_true():
@@ -405,16 +482,18 @@ code: |
           defenses = "No"
           warranty_of_habitability = "No"
           counter_claim = "No"
-        if retaliation:
-          defenses = "Yes"
-        if rental_allegations["rent"]:
-          rent_owed
-          if promise_breach:
+        if rental_allegations["breach"] or rental_allegations["damage"]:
+          if cotenant_responsible:
             defenses = "Yes"
-        unjust_enrichment
-        rental_detail
-
-        if rental_allegations["rent"] and rent_owed:
+            cross_claim = "Yes"
+          else:
+            cross_claim = "No"
+        else:
+          cross_claim = "No"
+      if retaliation:
+        defenses = "Yes"
+      if (defined("rental_allegations['rent']") and rental_allegations["rent"]) or (defined("factory_allegations['arrears']") and factory_allegations["arrears"]):
+        if rent_owed:
           admitting_in_part = "Yes"
           admitting = "No"
           denying = "No"
@@ -422,15 +501,27 @@ code: |
           admitting_in_part = "No"
           admitting = "No"
           denying = "Yes"
+        if promise_breach:
+          defenses = "Yes"
+      else:
+        admitting_in_part = "No"
+        admitting = "No"
+        denying = "Yes"
+        rent_owed = False
+        promise_breach = False
+      unjust_enrichment
+      rental_detail
 
-        if len(detail) > 600:
-          generate_longer_wrongful_occupation_answer
-        else:
-          generate_wrongful_occupation_answer
-        success_exit
+      if len(detail) > 600:
+        generate_longer_wrongful_occupation_answer
+      else:
+        generate_wrongful_occupation_answer
+      success_exit
     else:
-      # Should go to appeal once written
-      command('leave', url="https://iolaw.net/start/LAWV%20Petition%20for%20Appeal/")
+      if answer_appeal == "appeal":
+        command('leave', url="https://iolaw.net/start/LAWV%20Petition%20for%20Appeal/")
+      else:
+        command('restart')
   else:
     failure_reason = "If you have not received a summons and complaint, there is no need to file an answer at this time."
     ineligible
@@ -491,6 +582,10 @@ code: |
           detail += "Further, " + p.name.full() + " promised to " + promise + ", has not done so, and is in breach. "
       if warranty.any_true():
         detail += "My duty to pay rent is suspended because of " + p.possessive('breach') + " of the Warranty of Habitability. "
+  
+  if rental_allegations["breach"] or rental_allegations["damage"]:
+    if cotenant_responsible:
+      detail += "I am filing a cross-claim against " + cotenant_name + " because they are responsible for the allegations by " + p.name.full() + ".  By way of further answer, " + cotenant_name + " is responsible because " + cotenant_breach + ". "   
   
   if retaliation:
     detail += "I believe " + p.name.full() + " filed this action in retaliation to the complaint(s) I made about the conditions of the property. "
